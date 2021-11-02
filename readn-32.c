@@ -51,6 +51,7 @@ int print_rate(unsigned long interval_read_bytes, unsigned long interval_read_co
     double rx_rate_Gb_s = (double) interval_read_bytes * 8 / interval_sec / 1000000000.0;
     printf("%.6f %.6f %.3f MB/s %.3f Gbps %ld\n", 
         elapsed_sec, interval_sec, rx_rate_MB_s, rx_rate_Gb_s, interval_read_count);
+    fflush(stdout);
     return 0;
 }
 
