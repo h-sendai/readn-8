@@ -74,6 +74,12 @@ int verify_data(unsigned char *buf, int bufsize)
     static unsigned int seq_num = 0;
     unsigned int *int_p;
 
+    // int_p = bufとしてfor (i = 0, ...) ループでint_p++する手もある
+    // ここではint_pを順次、buf[4*i]のアドレスを指すようにセットし
+    // *int_pで値を取り出している
+    // もし値が期待値でなかった場合はバッファ全体をファイルに保存し
+    // あとから検証できるようにした。
+
     for (int i = 0; i < bufsize/sizeof(int); ++i) {
         int_p = (unsigned int *)&buf[i*sizeof(int)];
         unsigned int value_in_buf = *int_p;
