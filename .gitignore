@@ -2,7 +2,6 @@
 *.o
 *.d
 *~
-log
 readn-32
 #
 # to create empty directory and add it to repository:
