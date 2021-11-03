@@ -38,7 +38,7 @@ void sig_alarm(int signo)
 }
 
 int print_rate(unsigned long interval_read_bytes, unsigned long interval_read_count,
-    struct timeval tv_now, struct timeval tv_prev, struct timeval tv_start)
+    struct timeval tv_now, struct timeval tv_prev, struct timeval tv_start, int rcvbuf)
 {
     struct timeval tv_interval, tv_elapsed;
     timersub(&tv_now, &tv_start, &tv_elapsed);
@@ -49,8 +49,8 @@ int print_rate(unsigned long interval_read_bytes, unsigned long interval_read_co
     // printf("interval_read_bytes: %ld\n", interval_read_bytes);
     double rx_rate_MB_s = (double) interval_read_bytes / interval_sec / 1024.0 / 1024.0;
     double rx_rate_Gb_s = (double) interval_read_bytes * 8 / interval_sec / 1000000000.0;
-    printf("%.6f %.6f %.3f MB/s %.3f Gbps %ld\n", 
-        elapsed_sec, interval_sec, rx_rate_MB_s, rx_rate_Gb_s, interval_read_count);
+    printf("%.6f %.6f %.3f MB/s %.3f Gbps %ld %d\n", 
+        elapsed_sec, interval_sec, rx_rate_MB_s, rx_rate_Gb_s, interval_read_count, rcvbuf);
     fflush(stdout);
     return 0;
 }
@@ -165,11 +165,14 @@ int main(int argc, char *argv[])
     for ( ; ; ) {
         if (has_alarm) {
             gettimeofday(&tv_now, NULL);
-            print_rate(interval_read_bytes, interval_read_count, tv_now, tv_prev, tv_start);
+            int rcvbuf = get_so_rcvbuf(sockfd);
+            // printf("so_rcvbuf: %d\n", rcvbuf);
+            print_rate(interval_read_bytes, interval_read_count, tv_now, tv_prev, tv_start, rcvbuf);
             has_alarm = 0;
             interval_read_bytes = 0;
             interval_read_count = 0;
             tv_prev = tv_now;
+            fflush(stdout);
         }
         int n = readn(sockfd, buf, bufsize);
         if (n < 0) {
