@@ -89,7 +89,7 @@ int verify_data(unsigned char *buf, int bufsize)
             fprintf(stderr, "seq_num: %u, value_in_buf %u\n", seq_num, value_in_buf);
         }
         if (value_in_buf != seq_num) {
-            fprintf(stderr, "data mismatch.  expected: %u (0x %x), got %u (0x %x)\n", seq_num, seq_num, value_in_buf, value_in_buf);
+            fprintf(stderr, "data mismatch.  expected: %u (0x %x), got %u (0x %x). diff: %d\n", seq_num, seq_num, value_in_buf, value_in_buf, value_in_buf - seq_num);
             char filename[64];
             pid_t pid = getpid();
             snprintf(filename, sizeof(filename), "invalid-data.%d", pid);
