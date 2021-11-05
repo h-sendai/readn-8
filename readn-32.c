@@ -75,20 +75,32 @@ int verify_data(unsigned char *buf, int bufsize)
     static unsigned int seq_num = 0;
     unsigned int *int_p;
 
-    // int_p = bufとしてfor (i = 0, ...) ループでint_p++する手もある
-    // ここではint_pを順次、buf[4*i]のアドレスを指すようにセットし
-    // *int_pで値を取り出している
+    // for (int i = 0; i < bufsize/sizeof(int); ++i) {
+    //     int_p = (unsigned int *)&buf[i*sizeof(int)];
+    //     unsigned int value_in_buf = *int_p;
+    //     value_in_buf = ntohl(value_in_buf);
+    // のようおに整数先頭バッファをじゅんじさしてde-referenceする手も
+    // あるがこれは以下の方法より遅いようだ（測定してみた）
+
+    // int_p = bufとしてfor (i = 0, ...) ループでint_p++する方法を
+    // 使ってみた。
     // もし値が期待値でなかった場合はバッファ全体をファイルに保存し
     // あとから検証できるようにした。
 
-    for (int i = 0; i < bufsize/sizeof(int); ++i) {
-        int_p = (unsigned int *)&buf[i*sizeof(int)];
-        unsigned int value_in_buf = *int_p;
-        value_in_buf = ntohl(value_in_buf);
+    int n_num = bufsize / sizeof(int);
+    int_p = (unsigned int *)buf;
+    int value_in_buf;
+    for (int i = 0; i < n_num; ++i) {
+        //int_p = (unsigned int *)&buf[i*sizeof(int)];
+        //unsigned int value_in_buf = *int_p;
+        value_in_buf = ntohl(*int_p);
         if (debug) {
             fprintf(stderr, "seq_num: %u, value_in_buf %u\n", seq_num, value_in_buf);
         }
         if (value_in_buf != seq_num) {
+            struct timeval now;
+            gettimeofday(&now, NULL);
+            printf("%ld.%06ld\n", now.tv_sec, now.tv_usec);
             fprintf(stderr, "data mismatch.  expected: %u (0x %x), got %u (0x %x). diff: %d\n", seq_num, seq_num, value_in_buf, value_in_buf, value_in_buf - seq_num);
             char filename[64];
             pid_t pid = getpid();
@@ -96,7 +108,7 @@ int verify_data(unsigned char *buf, int bufsize)
             write_to_disk(buf, bufsize, filename);
             exit(1);
         }
-        //int_p++;
+        int_p++;
         seq_num++;
     }
     
