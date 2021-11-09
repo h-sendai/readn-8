@@ -89,7 +89,7 @@ int verify_data(unsigned char *buf, int bufsize)
 
     int n_num = bufsize / sizeof(int);
     int_p = (unsigned int *)buf;
-    int value_in_buf;
+    unsigned int value_in_buf;
     for (int i = 0; i < n_num; ++i) {
         //int_p = (unsigned int *)&buf[i*sizeof(int)];
         //unsigned int value_in_buf = *int_p;
@@ -101,7 +101,7 @@ int verify_data(unsigned char *buf, int bufsize)
             struct timeval now;
             gettimeofday(&now, NULL);
             printf("%ld.%06ld\n", now.tv_sec, now.tv_usec);
-            fprintf(stderr, "data mismatch.  expected: %u (0x %x), got %u (0x %x). diff: %d\n", seq_num, seq_num, value_in_buf, value_in_buf, value_in_buf - seq_num);
+            fprintf(stderr, "data mismatch.  expected: %u (0x %x), got %u (0x %x). diff: %u\n", seq_num, seq_num, value_in_buf, value_in_buf, value_in_buf - seq_num);
             char filename[64];
             pid_t pid = getpid();
             snprintf(filename, sizeof(filename), "invalid-data.%d", pid);
