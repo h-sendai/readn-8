@@ -21,6 +21,8 @@
 
 int debug = 0;
 volatile sig_atomic_t has_alarm = 0;
+int ignore_data_mismatch = 0;
+struct timeval tv_start;
 
 int usage()
 {
@@ -38,7 +40,7 @@ void sig_alarm(int signo)
 }
 
 int print_rate(unsigned long interval_read_bytes, unsigned long interval_read_count,
-    struct timeval tv_now, struct timeval tv_prev, struct timeval tv_start, int rcvbuf)
+    struct timeval tv_now, struct timeval tv_prev, int rcvbuf)
 {
     struct timeval tv_interval, tv_elapsed;
     timersub(&tv_now, &tv_start, &tv_elapsed);
@@ -98,15 +100,21 @@ int verify_data(unsigned char *buf, int bufsize)
             fprintf(stderr, "seq_num: %u, value_in_buf %u\n", seq_num, value_in_buf);
         }
         if (value_in_buf != seq_num) {
-            struct timeval now;
+            struct timeval now, elapsed;
             gettimeofday(&now, NULL);
-            printf("%ld.%06ld\n", now.tv_sec, now.tv_usec);
-            fprintf(stderr, "data mismatch.  expected: %u (0x %x), got %u (0x %x). diff: %u\n", seq_num, seq_num, value_in_buf, value_in_buf, value_in_buf - seq_num);
-            char filename[64];
-            pid_t pid = getpid();
-            snprintf(filename, sizeof(filename), "invalid-data.%d", pid);
-            write_to_disk(buf, bufsize, filename);
-            exit(1);
+            timersub(&now, &tv_start, &elapsed);
+            //printf("%ld.%06ld\n", now.tv_sec, now.tv_usec);
+            fprintf(stderr, "%ld.%06ld data mismatch.  expected: %u (0x %x), got %u (0x %x). diff: %u\n", elapsed.tv_sec, elapsed.tv_usec, seq_num, seq_num, value_in_buf, value_in_buf, value_in_buf - seq_num);
+            if (ignore_data_mismatch) {
+                seq_num = value_in_buf;
+            }
+            else {
+                char filename[64];
+                pid_t pid = getpid();
+                snprintf(filename, sizeof(filename), "invalid-data.%d", pid);
+                write_to_disk(buf, bufsize, filename);
+                exit(1);
+            }
         }
         int_p++;
         seq_num++;
@@ -119,20 +127,23 @@ int main(int argc, char *argv[])
 {
     int port = 24; /* default port */
     struct timeval display_rate_interval = { 1, 0 }; /* 1 second */
-    struct timeval tv_start, tv_now, tv_prev;
+    struct timeval tv_now, tv_prev;
     unsigned long interval_read_bytes = 0;
     unsigned long interval_read_count = 0;
     unsigned long total_read_bytes;
 
     int c;
     int bufsize = 128*1024;
-    while ( (c = getopt(argc, argv, "b:d")) != -1) {
+    while ( (c = getopt(argc, argv, "b:dI")) != -1) {
         switch (c) {
             case 'b':
                 bufsize = get_num(optarg);
                 break;
             case 'd':
                 debug = 1;
+                break;
+            case 'I':
+                ignore_data_mismatch = 1;
                 break;
             default:
                 break;
@@ -179,7 +190,7 @@ int main(int argc, char *argv[])
             gettimeofday(&tv_now, NULL);
             int rcvbuf = get_so_rcvbuf(sockfd);
             // printf("so_rcvbuf: %d\n", rcvbuf);
-            print_rate(interval_read_bytes, interval_read_count, tv_now, tv_prev, tv_start, rcvbuf);
+            print_rate(interval_read_bytes, interval_read_count, tv_now, tv_prev, rcvbuf);
             has_alarm = 0;
             interval_read_bytes = 0;
             interval_read_count = 0;
