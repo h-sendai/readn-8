@@ -26,8 +26,11 @@ struct timeval tv_start;
 
 int usage()
 {
-    char msg[] = "Usage: nread-32 remote_host:port\n"
-                 "default port: 24\n";
+    char msg[] = "Usage: nread-16 [-b bufsize] [-I] remote_host:port\n"
+                 "default port: 24\n"
+                 "-b bufsize: buffer size for readn().  suffix k for kilo, m for mega\n"
+                 "-I: ignore errors";
+     
     fprintf(stderr, "%s\n", msg);
 
     return 0;
@@ -74,8 +77,8 @@ int write_to_disk(unsigned char *buf, int bufsize, char *filename)
 
 int verify_data(unsigned char *buf, int bufsize)
 {
-    static unsigned int seq_num = 0;
-    unsigned int *int_p;
+    static unsigned short seq_num = 0;
+    unsigned short *short_p;
 
     // for (int i = 0; i < bufsize/sizeof(int); ++i) {
     //     int_p = (unsigned int *)&buf[i*sizeof(int)];
@@ -89,13 +92,13 @@ int verify_data(unsigned char *buf, int bufsize)
     // もし値が期待値でなかった場合はバッファ全体をファイルに保存し
     // あとから検証できるようにした。
 
-    int n_num = bufsize / sizeof(int);
-    int_p = (unsigned int *)buf;
-    unsigned int value_in_buf;
+    int n_num = bufsize / sizeof(short);
+    short_p = (unsigned short *)buf;
+    unsigned short value_in_buf;
     for (int i = 0; i < n_num; ++i) {
         //int_p = (unsigned int *)&buf[i*sizeof(int)];
         //unsigned int value_in_buf = *int_p;
-        value_in_buf = ntohl(*int_p);
+        value_in_buf = ntohs(*short_p);
         if (debug) {
             fprintf(stderr, "seq_num: %u, value_in_buf %u\n", seq_num, value_in_buf);
         }
@@ -116,7 +119,7 @@ int verify_data(unsigned char *buf, int bufsize)
                 exit(1);
             }
         }
-        int_p++;
+        short_p++;
         seq_num++;
     }
     
@@ -134,13 +137,17 @@ int main(int argc, char *argv[])
 
     int c;
     int bufsize = 128*1024;
-    while ( (c = getopt(argc, argv, "b:dI")) != -1) {
+    while ( (c = getopt(argc, argv, "b:hdI")) != -1) {
         switch (c) {
             case 'b':
                 bufsize = get_num(optarg);
                 break;
             case 'd':
                 debug = 1;
+                break;
+            case 'h':
+                usage();
+                exit(0);
                 break;
             case 'I':
                 ignore_data_mismatch = 1;
