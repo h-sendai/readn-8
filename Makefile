@@ -1,4 +1,4 @@
-PROG = readn-16
+PROG = readn-8
 CFLAGS += -g -O2 -Wall
 CFLAGS += -std=gnu99
 # CFLAGS += -pthread

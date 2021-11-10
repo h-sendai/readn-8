@@ -2,7 +2,7 @@
 *.o
 *.d
 *~
-readn-16
+readn-8
 #
 # to create empty directory and add it to repository:
 # mkdir log
